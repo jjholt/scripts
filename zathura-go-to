@@ -1,0 +1,41 @@
+#!/bin/zsh
+page=$1
+ids=$(xdotool search --class zathura)
+
+if [ -z "$1" ]; then
+    echo "Error: Provide a page number as argument"
+    exit 1
+fi
+if [ -z "$ids" ]; then
+    echo "Zathura is not running."
+    exit 1
+fi
+
+id_array=()
+windows=()
+echo "$ids" | while read -r id; do
+    window_name=$(xdotool getwindowname $id)
+    if [[ $window_name != "org.pwmt.zathura" ]]; then
+        id_array+=($id)
+        windows+=($window_name)
+    fi
+done
+
+if [[ ${#id_array[@]} -eq 1 ]]; then
+    id=$id_array[1]
+else
+    i=1
+    echo "Please choose the document index (1, 2, etc)"
+    for name in "${windows[@]}"; do
+        echo "[$i]: $window_name"
+        ((i++))
+    done
+
+    read selection
+    id=${id_array[$((selection))]}
+fi
+
+
+pid=$(xdotool getwindowpid $id)
+
+busctl --user call org.pwmt.zathura.PID-$pid /org/pwmt/zathura org.pwmt.zathura GotoPage u $page > /dev/null
